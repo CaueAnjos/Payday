@@ -1,7 +1,25 @@
+using Microsoft.EntityFrameworkCore;
+using PaydayBackend.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddDbContextPool<ContractContext>(config =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("ContractContext");
+    if (connectionString is null)
+    {
+        connectionString = Environment.GetEnvironmentVariable("PAYDAY_DB");
+    }
+
+    if (connectionString is null)
+        throw new NullReferenceException(
+            "connectionString for ContractContext was null! ContractContext wasn't set, and PAYDAY_DB env var wasn't as well."
+        );
+
+    config.UseNpgsql(connectionString);
+});
 
 var app = builder.Build();
 
@@ -20,10 +38,7 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
+app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
-
 
 app.Run();
