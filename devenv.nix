@@ -6,6 +6,7 @@
   packages = with pkgs; [
     git
     jujutsu
+    jq
     dotnet-ef
   ];
 

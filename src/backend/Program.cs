@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PaydayBackend.Models;
+using PaydayBackend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,9 @@ builder.Services.AddDbContextPool<ContractContext>(config =>
 
     config.UseNpgsql(connectionString);
 });
+
+builder.Services.AddDataProtection();
+builder.Services.AddSingleton<CursorService>();
 
 var app = builder.Build();
 
