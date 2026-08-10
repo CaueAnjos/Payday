@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.AspNetCore.DataProtection;
 
@@ -23,7 +24,14 @@ public class CursorService(IDataProtectionProvider provider)
 
     public Cursor? DecodeCursor(string encodedCursor)
     {
-        var json = protector.Unprotect(encodedCursor);
-        return JsonSerializer.Deserialize<Cursor>(json);
+        try
+        {
+            var json = protector.Unprotect(encodedCursor);
+            return JsonSerializer.Deserialize<Cursor>(json);
+        }
+        catch (CryptographicException)
+        {
+            return null;
+        }
     }
 }

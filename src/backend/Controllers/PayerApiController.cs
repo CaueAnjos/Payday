@@ -34,31 +34,24 @@ public class PayerApiController(ContractContext db, CursorService cursorService)
 
         var after = 0;
 
-        try
+        if (!string.IsNullOrEmpty(cursor))
         {
-            if (!string.IsNullOrEmpty(cursor))
-            {
-                var decodedCursor = cursorService.DecodeCursor(cursor);
-                if (decodedCursor is null)
-                    return BadRequest();
+            var decodedCursor = cursorService.DecodeCursor(cursor);
+            if (decodedCursor is null)
+                return BadRequest();
 
-                after = decodedCursor.Id;
-            }
-        }
-        catch
-        {
-            return BadRequest();
+            after = decodedCursor.Id;
         }
 
         var payers = await db
-            .Payers.Where(p => p.Id > after)
+            .Payers.Where(p => p.Id >= after)
             .OrderBy(p => p.Id)
-            .Take(size)
+            .Take(size + 1)
             .ToListAsync();
 
-        var nextCursor = payers.Count == size ? cursorService.EncodeCursor(payers.Last().Id) : "";
+        var nextCursor = payers.Count > size ? cursorService.EncodeCursor(payers.Last().Id) : "";
 
-        return Ok(new { Data = payers, NextCursor = nextCursor });
+        return Ok(new { Data = payers.Take(size), NextCursor = nextCursor });
     }
 
     [HttpPost]
