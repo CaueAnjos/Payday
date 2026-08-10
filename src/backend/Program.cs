@@ -27,6 +27,11 @@ builder.Services.AddDbContextPool<ContractContext>(config =>
 builder.Services.AddDataProtection();
 builder.Services.AddSingleton<CursorService>();
 
+if (builder.Environment.IsStaging())
+{
+    builder.WebHost.UseStaticWebAssets();
+}
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
