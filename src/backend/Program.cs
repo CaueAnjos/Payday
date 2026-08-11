@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PaydayBackend.Models;
 using PaydayBackend.Services;
+using PaydayBackend.Services.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,8 @@ builder.Services.AddDbContextPool<ContractContext>(config =>
 
 builder.Services.AddDataProtection();
 builder.Services.AddSingleton<CursorService>();
+
+builder.Services.AddRepositories();
 
 if (builder.Environment.IsStaging())
 {

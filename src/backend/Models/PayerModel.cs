@@ -1,14 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using PaydayBackend.Models.Abstractions;
 
 namespace PaydayBackend.Models;
 
 [Table("Payers", Schema = "Contract")]
-public class Payer
+public class Payer : Entity
 {
-    [Key]
-    public int Id { get; set; }
-
     [Required]
     [MaxLength(255)]
     public string Name { get; set; } = default!;

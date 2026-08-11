@@ -1,15 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using PaydayBackend.Models.Abstractions;
 
 namespace PaydayBackend.Models;
 
 [Table("Payments", Schema = "Contract")]
-public class Payment
+public class Payment : Entity
 {
-    [Key]
-    public int Id { get; set; }
-
     [ForeignKey(nameof(Owner))]
     public int OwnerId { get; set; }
 

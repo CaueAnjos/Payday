@@ -1,14 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using PaydayBackend.Models.Abstractions;
 
 namespace PaydayBackend.Models;
 
 [Table("Contracts", Schema = "Contract")]
-public class Contract
+public class Contract : Entity
 {
-    [Key]
-    public int Id { get; set; }
-
     public List<Payer> Participants { get; set; } = [];
     public List<Payment> Payments { get; set; } = [];
 
