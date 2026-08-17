@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PaydayBackend.Models;
-using PaydayBackend.Services;
+using PaydayBackend.Services.Pagination;
 using PaydayBackend.Services.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,10 +25,12 @@ builder.Services.AddDbContextPool<ContractContext>(config =>
     config.UseNpgsql(connectionString);
 });
 
-builder.Services.AddDataProtection();
-builder.Services.AddSingleton<CursorService>();
-
 builder.Services.AddRepositories();
+builder.Services.AddPagination(options =>
+{
+    options.MaxPageSize = 25;
+    options.DefaultPageSize = 20;
+});
 
 if (builder.Environment.IsStaging())
 {

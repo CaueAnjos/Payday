@@ -1,16 +1,18 @@
 using Microsoft.AspNetCore.Mvc;
 using PaydayBackend.Models;
 using PaydayBackend.Requests;
-using PaydayBackend.Services;
+using PaydayBackend.Services.Pagination;
 using PaydayBackend.Services.Repositories;
 
 namespace PaydayBackend.Controllers;
 
 [ApiController]
 [Route("/api/payers")]
-public class PayerApiController(IPayersRespository payers, CursorService cursorService) : Controller
+public class PayerApiController(IPayersRespository payers, IPaginatorService<Payer> paginator)
+    : Controller
 {
     private readonly IPayersRespository _payers = payers;
+    private readonly IPaginatorService<Payer> _paginator = paginator;
 
     [HttpGet("{id?}")]
     public async Task<IActionResult> GetPayers(
@@ -29,25 +31,13 @@ public class PayerApiController(IPayersRespository payers, CursorService cursorS
                 return Ok(payer);
         }
 
-        var after = 0;
+        Page<Payer> page;
+        if (cursor is null)
+            page = await _paginator.MakePageAsync(new Cursor(0), size, cancel);
+        else
+            page = await _paginator.MakePageAsync(cursor, size, cancel);
 
-        if (!string.IsNullOrEmpty(cursor))
-        {
-            var decodedCursor = cursorService.DecodeCursor(cursor);
-            if (decodedCursor is null)
-                return BadRequest();
-
-            after = decodedCursor.Id;
-        }
-
-        var payers = await _payers.GetAllAsync(after, size + 1, cancel);
-        if (payers is null)
-            return BadRequest();
-
-        var nextCursor =
-            payers.Count > size ? cursorService.EncodeCursor(payers.ElementAt(size - 1).Id) : "";
-
-        return Ok(new { Data = payers.Take(size), NextCursor = nextCursor });
+        return Ok(page);
     }
 
     [HttpPost]
@@ -60,10 +50,21 @@ public class PayerApiController(IPayersRespository payers, CursorService cursorS
         if (payer is null)
             return BadRequest();
 
-        var ok = await _payers.CreateAsync(payer, cancel);
-        if (!ok)
+        await _payers.CreateAsync(payer, cancel);
+        return CreatedAtAction(nameof(GetPayers), new { id = payer.Id });
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> PutPayer(
+        CreatePayerRequest request,
+        CancellationToken cancel = default
+    )
+    {
+        var payer = (Payer)request;
+        if (payer is null)
             return BadRequest();
 
+        await _payers.CreateOrReplaceAsync(payer, cancel);
         return CreatedAtAction(nameof(GetPayers), new { id = payer.Id });
     }
 
@@ -74,20 +75,14 @@ public class PayerApiController(IPayersRespository payers, CursorService cursorS
         CancellationToken cancel = default
     )
     {
-        var ok = await _payers.UpdateAsync(id, patch: request, cancel);
-        if (!ok)
-            return NotFound();
-
+        await _payers.UpdateAsync(id, patch: request, cancel);
         return NoContent();
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeletePayer(int id, CancellationToken cancel = default)
     {
-        var ok = await _payers.DeleteAsync(id, cancel);
-        if (!ok)
-            return NotFound();
-
+        await _payers.DeleteAsync(id, cancel);
         return NoContent();
     }
 }

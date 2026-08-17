@@ -2,31 +2,23 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.AspNetCore.DataProtection;
 
-namespace PaydayBackend.Services;
+namespace PaydayBackend.Services.Pagination;
 
-public class CursorService(IDataProtectionProvider provider)
+public class CursorService(IDataProtectionProvider provider) : ICursorService
 {
-    private readonly IDataProtector protector = provider.CreateProtector(nameof(CursorService));
-
-    public record Cursor(int Id)
-    {
-        public static implicit operator Cursor(int Id)
-        {
-            return new Cursor(Id);
-        }
-    };
+    private readonly IDataProtector _protector = provider.CreateProtector(nameof(CursorService));
 
     public string EncodeCursor(Cursor cursor)
     {
         var json = JsonSerializer.Serialize(cursor);
-        return protector.Protect(json);
+        return _protector.Protect(json);
     }
 
     public Cursor? DecodeCursor(string encodedCursor)
     {
         try
         {
-            var json = protector.Unprotect(encodedCursor);
+            var json = _protector.Unprotect(encodedCursor);
             return JsonSerializer.Deserialize<Cursor>(json);
         }
         catch (CryptographicException)

@@ -7,26 +7,45 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
     where T : Entity
 {
     private readonly DbSet<T> _entities = context.Set<T>();
-    public readonly int MaxPageSize = 1000;
 
-    public virtual async Task<bool> CreateAsync(T entity, CancellationToken cancel = default)
+    protected async Task<bool> ShouldCreateAsync(object id)
     {
-        await _entities.AddAsync(entity, cancel);
-        return await context.SaveChangesAsync(cancel) > 0;
+        if (await ExistsAsync(id))
+            return false;
+        return true;
     }
 
-    public virtual async Task<bool> DeleteAsync(int id, CancellationToken cancel = default)
+    public virtual async Task<bool> ExistsAsync(object id)
+    {
+        var entity = await _entities.FindAsync();
+        return entity is not null;
+    }
+
+    public virtual async Task CreateAsync(T entity, CancellationToken cancel = default)
+    {
+        await _entities.AddAsync(entity, cancel);
+        await context.SaveChangesAsync(cancel);
+    }
+
+    public virtual async Task CreateOrReplaceAsync(T entity, CancellationToken cancel = default)
+    {
+        if (await _entities.FindAsync(entity.Id) is not null) { }
+        await UpdateAsync(entity.Id, entity, cancel);
+        await CreateAsync(entity);
+    }
+
+    public virtual async Task DeleteAsync(object id, CancellationToken cancel = default)
     {
         var entity = await _entities.FindAsync(id);
         if (entity is null)
-            return false;
+            return;
 
         _entities.Remove(entity);
-        return await context.SaveChangesAsync() > 0;
+        await context.SaveChangesAsync();
     }
 
-    public virtual async Task<ICollection<T>?> GetAllAsync(
-        int afterId = 0,
+    public virtual async Task<IReadOnlyList<T>?> GetAllAsync(
+        object? afterId = null,
         int size = 100,
         CancellationToken cancel = default
     )
@@ -34,26 +53,31 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
         if (size <= 0)
             return null;
 
-        return await _entities
-            .Where(e => e.Id > afterId)
-            .OrderBy(p => p.Id)
-            .Take(size)
-            .AsNoTracking()
-            .ToListAsync(cancel);
+        if (afterId is int cursor)
+        {
+            return await _entities
+                .Where(e => e.Id > cursor)
+                .OrderBy(p => p.Id)
+                .Take(size)
+                .AsNoTracking()
+                .ToListAsync(cancel);
+        }
+
+        return null;
     }
 
-    public virtual async Task<T?> GetByIdAsync(int id, CancellationToken cancel = default)
+    public virtual async Task<T?> GetByIdAsync(object id, CancellationToken cancel = default)
     {
         return await _entities.FindAsync(id);
     }
 
-    public virtual async Task<bool> UpdateAsync(int id, object patch, CancellationToken cancel)
+    public virtual async Task UpdateAsync(object id, object patch, CancellationToken cancel)
     {
         var enityToUpdate = await _entities.FindAsync(id);
         if (enityToUpdate is null)
-            return false;
+            return;
 
         context.Entry(enityToUpdate).CurrentValues.SetValues(patch);
-        return await context.SaveChangesAsync() > 0;
+        await context.SaveChangesAsync();
     }
 }
