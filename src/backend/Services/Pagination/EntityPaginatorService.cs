@@ -18,18 +18,21 @@ public class EntityPaginatorService<entityType, repositoryType>
     private readonly PaginatorServiceOptions _options;
     private readonly ICursorService _cursorService;
     private readonly repositoryType _repositoryReader;
+    private readonly ILogger<EntityPaginatorService<entityType, repositoryType>> _logger;
 
     public repositoryType RepositoryReader => _repositoryReader;
 
     public EntityPaginatorService(
         IOptions<PaginatorServiceOptions> options,
         repositoryType repository,
-        ICursorService cursorService
+        ICursorService cursorService,
+        ILogger<EntityPaginatorService<entityType, repositoryType>> logger
     )
     {
         _options = options.Value;
         _repositoryReader = repository;
         _cursorService = cursorService;
+        _logger = logger;
     }
 
     protected int GetRealSize(int size)
@@ -42,14 +45,12 @@ public class EntityPaginatorService<entityType, repositoryType>
 
     protected Page<entityType> BuildPage(
         IReadOnlyList<entityType>? items = null,
-        object? afterId = null
+        int? afterId = null
     )
     {
         string nextCursor = string.Empty;
-        if (afterId is not null)
-        {
-            nextCursor = _cursorService.EncodeCursor(new Cursor(afterId));
-        }
+        if (afterId.HasValue)
+            nextCursor = _cursorService.EncodeCursor(new Cursor(afterId.Value));
 
         var pageContent = items ?? [];
         return new Page<entityType>(Size: pageContent.Count, Items: pageContent, nextCursor);
@@ -63,7 +64,10 @@ public class EntityPaginatorService<entityType, repositoryType>
     {
         var cursor = _cursorService.DecodeCursor(encodeCursor);
         if (cursor is null)
+        {
+            _logger.LogWarning("Cursor couldn't be decoded. So it is not valid.");
             return BuildPage();
+        }
 
         return await MakePageAsync(new Cursor(cursor.Id), size, cancel);
     }
@@ -75,15 +79,25 @@ public class EntityPaginatorService<entityType, repositoryType>
     )
     {
         size = GetRealSize(size);
-        var afterId = cursor.Id;
+        int? afterId = cursor.Id;
 
-        var entities = await _repositoryReader.GetAllAsync(afterId, size + 1, cancel);
+        var entities = await _repositoryReader.GetAllAsync(afterId!, size + 1, cancel);
         if (entities is not null && entities.Count > size)
             afterId = entities.ElementAt(size - 1).Id;
         else
             afterId = null;
 
+        if (entities is null)
+        {
+            _logger.LogError("entities is null");
+        }
+
         var content = entities?.Take(size).ToList();
+        if (content is null)
+        {
+            _logger.LogError("content is null");
+        }
+
         return BuildPage(content, afterId);
     }
 }

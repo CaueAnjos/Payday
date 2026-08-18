@@ -1,6 +1,6 @@
 namespace PaydayBackend.Services.Pagination;
 
-public record Cursor(object Id);
+public sealed record Cursor(int Id);
 
 public interface ICursorService
 {
