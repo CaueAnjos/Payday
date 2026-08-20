@@ -8,16 +8,30 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
 {
     private readonly DbSet<T> _entities = context.Set<T>();
 
-    protected async Task<bool> ShouldCreateAsync(int id)
+    protected async Task<bool> ShouldCreateAsync(int? id)
     {
-        if (await ExistsAsync(id))
+        if (!id.HasValue || await ExistsAsync(id.Value))
             return false;
         return true;
     }
 
+    protected async Task<bool> ShouldDeleteAsync(int? id)
+    {
+        if (!id.HasValue || await ExistsAsync(id.Value))
+            return true;
+        return false;
+    }
+
+    protected async Task<bool> ShouldUpdateAsync(int? id)
+    {
+        if (!id.HasValue || await ExistsAsync(id.Value))
+            return true;
+        return false;
+    }
+
     public virtual async Task<bool> ExistsAsync(int id)
     {
-        var entity = await _entities.FindAsync();
+        var entity = await _entities.FindAsync(id);
         return entity is not null;
     }
 
@@ -29,19 +43,20 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
 
     public virtual async Task CreateOrReplaceAsync(T entity, CancellationToken cancel = default)
     {
-        if (await _entities.FindAsync(entity.Id) is not null) { }
-        await UpdateAsync(entity.Id, entity, cancel);
-        await CreateAsync(entity);
+        if (await ShouldCreateAsync(entity.Id))
+            await CreateAsync(entity);
+        else
+            await UpdateAsync(entity.Id, entity, cancel);
     }
 
     public virtual async Task DeleteAsync(int id, CancellationToken cancel = default)
     {
-        var entity = await _entities.FindAsync(id);
-        if (entity is null)
-            return;
-
-        _entities.Remove(entity);
-        await context.SaveChangesAsync();
+        var entity = await GetByIdAsync(id);
+        if (await ShouldDeleteAsync(id) && entity is not null)
+        {
+            _entities.Remove(entity);
+            await context.SaveChangesAsync();
+        }
     }
 
     public virtual async Task<IReadOnlyList<T>?> GetAllAsync(
@@ -71,13 +86,13 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
         return await _entities.FindAsync(id);
     }
 
-    public virtual async Task UpdateAsync(int id, object patch, CancellationToken cancel)
+    public virtual async Task UpdateAsync(int id, object patch, CancellationToken cancel = default)
     {
-        var enityToUpdate = await _entities.FindAsync(id);
-        if (enityToUpdate is null)
-            return;
-
-        context.Entry(enityToUpdate).CurrentValues.SetValues(patch);
-        await context.SaveChangesAsync();
+        var enityToUpdate = await GetByIdAsync(id);
+        if (await ShouldUpdateAsync(id) && enityToUpdate is not null)
+        {
+            context.Entry(enityToUpdate).CurrentValues.SetValues(patch);
+            await context.SaveChangesAsync();
+        }
     }
 }
