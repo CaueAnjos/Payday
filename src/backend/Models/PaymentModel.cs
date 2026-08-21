@@ -35,5 +35,5 @@ public class Payment : Entity
     public string? Description { get; set; }
 
     [Required]
-    public bool Paid = false;
+    public bool Paid { get; set; } = false;
 }
