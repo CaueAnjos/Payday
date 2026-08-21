@@ -37,7 +37,7 @@ public class EntityPaginatorService<entityType, repositoryType>
 
     protected int GetRealSize(int size)
     {
-        if (size < 0 || size > _options.MaxPageSize)
+        if (size <= 0 || size > _options.MaxPageSize)
             return _options.DefaultPageSize;
 
         return size;
@@ -79,24 +79,11 @@ public class EntityPaginatorService<entityType, repositoryType>
     )
     {
         size = GetRealSize(size);
-        int? afterId = cursor.Id;
 
-        var entities = await _repositoryReader.GetAllAsync(afterId!, size + 1, cancel);
-        if (entities is not null && entities.Count > size)
-            afterId = entities.ElementAt(size - 1).Id;
-        else
-            afterId = null;
+        var entities = await _repositoryReader.GetAllAsync(cursor.Id, size + 1, cancel) ?? [];
 
-        if (entities is null)
-        {
-            _logger.LogError("entities is null");
-        }
-
-        var content = entities?.Take(size).ToList();
-        if (content is null)
-        {
-            _logger.LogError("content is null");
-        }
+        int? afterId = entities.Count > size ? entities.ElementAt(size - 1).Id : null;
+        var content = entities.Take(size).ToList();
 
         return BuildPage(content, afterId);
     }
