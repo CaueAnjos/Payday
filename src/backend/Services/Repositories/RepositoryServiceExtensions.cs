@@ -3,7 +3,7 @@ using PaydayBackend.Models.Abstractions;
 
 namespace PaydayBackend.Services.Repositories;
 
-public static class RespositoryServiceExtensions
+public static class RepositoryServiceExtensions
 {
     public static IServiceCollection AddRepository<
         entityType,
@@ -24,7 +24,7 @@ public static class RespositoryServiceExtensions
 
     public static IServiceCollection AddRepositories(this IServiceCollection services)
     {
-        services.AddRepository<Payer, IPayersRespository, PayersRespository>();
+        services.AddRepository<Payer, IPayersRepository, PayersRepository>();
 
         return services;
     }

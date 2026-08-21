@@ -8,10 +8,10 @@ namespace PaydayBackend.Controllers;
 
 [ApiController]
 [Route("/api/payers")]
-public class PayerApiController(IPayersRespository payers, IPaginatorService<Payer> paginator)
+public class PayerApiController(IPayersRepository payers, IPaginatorService<Payer> paginator)
     : Controller
 {
-    private readonly IPayersRespository _payers = payers;
+    private readonly IPayersRepository _payers = payers;
     private readonly IPaginatorService<Payer> _paginator = paginator;
 
     [HttpGet("{id?}")]

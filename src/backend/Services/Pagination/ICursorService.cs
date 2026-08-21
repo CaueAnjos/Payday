@@ -5,5 +5,5 @@ public sealed record Cursor(int Id);
 public interface ICursorService
 {
     public string EncodeCursor(Cursor cursor);
-    public Cursor? DecodeCursor(string endodedCursor);
+    public Cursor? DecodeCursor(string encodedCursor);
 }

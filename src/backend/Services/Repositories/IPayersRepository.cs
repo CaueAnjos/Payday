@@ -2,4 +2,4 @@ using PaydayBackend.Models;
 
 namespace PaydayBackend.Services.Repositories;
 
-public interface IPayersRespository : IRepository<Payer>;
+public interface IPayersRepository : IRepository<Payer>;
