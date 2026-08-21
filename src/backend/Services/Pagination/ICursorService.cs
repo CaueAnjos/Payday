@@ -1,6 +1,12 @@
 namespace PaydayBackend.Services.Pagination;
 
-public sealed record Cursor(int Id);
+public enum CursorDirection
+{
+    Forward,
+    Backward,
+}
+
+public sealed record Cursor(int Id, CursorDirection Direction = CursorDirection.Forward);
 
 public interface ICursorService
 {

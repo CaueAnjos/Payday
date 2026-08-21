@@ -3,10 +3,10 @@ using PaydayBackend.Services.Repositories;
 
 namespace PaydayBackend.Services.Pagination;
 
-public record Page<T>(int Size, IReadOnlyList<T> Items, string NextCursor);
+public record Page<T>(int Size, IReadOnlyList<T> Items, string NextCursor, string PreviousCursor);
 
-public record Page(int Size, IReadOnlyList<object> Items, string NextCursor)
-    : Page<object>(Size, Items, NextCursor);
+public record Page(int Size, IReadOnlyList<object> Items, string NextCursor, string PreviousCursor)
+    : Page<object>(Size, Items, NextCursor, PreviousCursor);
 
 public interface IPaginatorService<T>
 {

@@ -43,12 +43,26 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
 
     public virtual async Task<IReadOnlyList<T>?> GetAllAsync(
         int? afterId = null,
+        int? beforeId = null,
         int size = 100,
         CancellationToken cancel = default
     )
     {
         if (size <= 0)
             return null;
+
+        if (beforeId is int before)
+        {
+            var precedingEntities = await _entities
+                .Where(e => e.Id < before)
+                .OrderByDescending(e => e.Id)
+                .Take(size)
+                .AsNoTracking()
+                .ToListAsync(cancel);
+
+            precedingEntities.Reverse();
+            return precedingEntities;
+        }
 
         var cursor = afterId ?? 0;
 

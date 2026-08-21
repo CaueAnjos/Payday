@@ -7,8 +7,16 @@ public interface IRepositoryReader<T>
 {
     Task<bool> ExistsAsync(int id);
     Task<T?> GetByIdAsync(int id, CancellationToken cancel = default);
+
+    /// <summary>
+    /// Fetches a page of entities ordered by Id. Only one of <paramref name="afterId"/> or
+    /// <paramref name="beforeId"/> should be provided at a time; <paramref name="afterId"/> pages
+    /// forward (Id &gt; afterId, ascending) and <paramref name="beforeId"/> pages backward
+    /// (Id &lt; beforeId), but the returned list is always ordered ascending by Id.
+    /// </summary>
     Task<IReadOnlyList<T>?> GetAllAsync(
         int? afterId = null,
+        int? beforeId = null,
         int size = 100,
         CancellationToken cancel = default
     );

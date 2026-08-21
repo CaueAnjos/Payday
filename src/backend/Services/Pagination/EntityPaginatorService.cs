@@ -45,15 +45,27 @@ public class EntityPaginatorService<entityType, repositoryType>
 
     protected Page<entityType> BuildPage(
         IReadOnlyList<entityType>? items = null,
-        int? afterId = null
+        int? afterId = null,
+        int? beforeId = null
     )
     {
         string nextCursor = string.Empty;
         if (afterId.HasValue)
-            nextCursor = _cursorService.EncodeCursor(new Cursor(afterId.Value));
+            nextCursor = _cursorService.EncodeCursor(new Cursor(afterId.Value, CursorDirection.Forward));
+
+        string previousCursor = string.Empty;
+        if (beforeId.HasValue)
+            previousCursor = _cursorService.EncodeCursor(
+                new Cursor(beforeId.Value, CursorDirection.Backward)
+            );
 
         var pageContent = items ?? [];
-        return new Page<entityType>(Size: pageContent.Count, Items: pageContent, nextCursor);
+        return new Page<entityType>(
+            Size: pageContent.Count,
+            Items: pageContent,
+            nextCursor,
+            previousCursor
+        );
     }
 
     public async Task<Page<entityType>> MakePageAsync(
@@ -69,7 +81,7 @@ public class EntityPaginatorService<entityType, repositoryType>
             return BuildPage();
         }
 
-        return await MakePageAsync(new Cursor(cursor.Id), size, cancel);
+        return await MakePageAsync(cursor, size, cancel);
     }
 
     public async Task<Page<entityType>> MakePageAsync(
@@ -80,11 +92,46 @@ public class EntityPaginatorService<entityType, repositoryType>
     {
         size = GetRealSize(size);
 
-        var entities = await _repositoryReader.GetAllAsync(cursor.Id, size + 1, cancel) ?? [];
+        return cursor.Direction == CursorDirection.Backward
+            ? await MakePreviousPageAsync(cursor.Id, size, cancel)
+            : await MakeNextPageAsync(cursor.Id, size, cancel);
+    }
 
-        int? afterId = entities.Count > size ? entities.ElementAt(size - 1).Id : null;
+    private async Task<Page<entityType>> MakeNextPageAsync(
+        int afterId,
+        int size,
+        CancellationToken cancel
+    )
+    {
+        var entities =
+            await _repositoryReader.GetAllAsync(afterId: afterId, size: size + 1, cancel: cancel)
+            ?? [];
+
+        var hasMore = entities.Count > size;
         var content = entities.Take(size).ToList();
 
-        return BuildPage(content, afterId);
+        int? nextId = hasMore && content.Count > 0 ? content.Last().Id : null;
+        int? previousId = afterId > 0 && content.Count > 0 ? content.First().Id : null;
+
+        return BuildPage(content, afterId: nextId, beforeId: previousId);
+    }
+
+    private async Task<Page<entityType>> MakePreviousPageAsync(
+        int beforeId,
+        int size,
+        CancellationToken cancel
+    )
+    {
+        var entities =
+            await _repositoryReader.GetAllAsync(beforeId: beforeId, size: size + 1, cancel: cancel)
+            ?? [];
+
+        var hasMore = entities.Count > size;
+        var content = entities.TakeLast(size).ToList();
+
+        int? previousId = hasMore && content.Count > 0 ? content.First().Id : null;
+        int? nextId = content.Count > 0 ? content.Last().Id : null;
+
+        return BuildPage(content, afterId: nextId, beforeId: previousId);
     }
 }
