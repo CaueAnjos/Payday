@@ -47,35 +47,25 @@ public class PayerApiController(IPayersRepository payers, IPaginatorService<Paye
     )
     {
         var payer = (Payer)request;
-        if (payer is null)
-            return BadRequest();
 
         await _payers.CreateAsync(payer, cancel);
         return CreatedAtAction(nameof(GetPayers), new { id = payer.Id });
     }
 
-    [HttpPut]
-    public async Task<IActionResult> PutPayer(
-        CreatePayerRequest request,
-        CancellationToken cancel = default
-    )
-    {
-        var payer = (Payer)request;
-        if (payer is null)
-            return BadRequest();
-
-        await _payers.CreateOrReplaceAsync(payer, cancel);
-        return CreatedAtAction(nameof(GetPayers), new { id = payer.Id });
-    }
-
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdatePayer(
+    public async Task<IActionResult> PutPayer(
         int id,
         UpdatePayerRequest request,
         CancellationToken cancel = default
     )
     {
-        await _payers.UpdateAsync(id, patch: request, cancel);
+        var payer = (Payer)request;
+        payer.Id = id;
+
+        var created = await _payers.CreateOrReplaceAsync(payer, cancel);
+        if (created)
+            return CreatedAtAction(nameof(GetPayers), new { id });
+
         return NoContent();
     }
 
