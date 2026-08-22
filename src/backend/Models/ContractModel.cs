@@ -31,7 +31,7 @@ public class Contract : Entity
     public DateTime PaymentDate { get; set; }
 
     public DateTime? CloseDate { get; set; }
-    public List<Signature>? CloseSignatures { get; set; }
+    public List<Signature> CloseSignatures { get; set; } = [];
 
     [Required]
     [MaxLength(200)]
