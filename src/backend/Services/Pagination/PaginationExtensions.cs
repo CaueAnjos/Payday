@@ -30,6 +30,7 @@ public static class PaginationExtensions
         services.AddTransient<ICursorService, CursorService>();
 
         services.AddEntityPaginator<Payer>();
+        services.AddEntityPaginator<Contract>();
 
         return services;
     }
