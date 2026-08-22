@@ -25,6 +25,7 @@ public static class RepositoryServiceExtensions
     public static IServiceCollection AddRepositories(this IServiceCollection services)
     {
         services.AddRepository<Payer, IPayersRepository, PayersRepository>();
+        services.AddRepository<Contract, IContractsRepository, ContractsRepository>();
 
         return services;
     }
