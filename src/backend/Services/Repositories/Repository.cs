@@ -8,10 +8,16 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
 {
     private readonly DbSet<T> _entities = context.Set<T>();
 
+    protected IQueryable<T> _query => AddIncludes(_entities.AsQueryable());
+
+    protected virtual IQueryable<T> AddIncludes(IQueryable<T> query)
+    {
+        return query;
+    }
+
     public virtual async Task<bool> ExistsAsync(int id)
     {
-        var entity = await _entities.FindAsync(id);
-        return entity is not null;
+        return await _query.AnyAsync(e => e.Id == id);
     }
 
     public virtual async Task CreateAsync(T entity, CancellationToken cancel = default)
@@ -20,7 +26,10 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
         await context.SaveChangesAsync(cancel);
     }
 
-    public virtual async Task<bool> CreateOrReplaceAsync(T entity, CancellationToken cancel = default)
+    public virtual async Task<bool> CreateOrReplaceAsync(
+        T entity,
+        CancellationToken cancel = default
+    )
     {
         var exists = await ExistsAsync(entity.Id);
         if (exists)
@@ -53,7 +62,7 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
 
         if (beforeId is int before)
         {
-            var precedingEntities = await _entities
+            var precedingEntities = await _query
                 .Where(e => e.Id < before)
                 .OrderByDescending(e => e.Id)
                 .Take(size)
@@ -66,7 +75,7 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
 
         var cursor = afterId ?? 0;
 
-        return await _entities
+        return await _query
             .Where(e => e.Id > cursor)
             .OrderBy(e => e.Id)
             .Take(size)
@@ -76,7 +85,7 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
 
     public virtual async Task<T?> GetByIdAsync(int id, CancellationToken cancel = default)
     {
-        return await _entities.FindAsync([id], cancel);
+        return await _query.FirstOrDefaultAsync(e => e.Id == id);
     }
 
     public virtual async Task UpdateAsync(int id, object patch, CancellationToken cancel = default)
