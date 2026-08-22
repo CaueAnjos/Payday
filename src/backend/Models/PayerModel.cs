@@ -18,4 +18,6 @@ public class Payer : Entity
     public string Email { get; set; } = default!;
 
     public List<Payment> Payments { get; set; } = [];
+    public List<Contract> Contracts { get; set; } = [];
+    public List<Signature> Signatures { get; set; } = [];
 }

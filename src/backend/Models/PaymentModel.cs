@@ -14,14 +14,11 @@ public class Payment : Entity
     [Required]
     public Payer Owner { get; set; } = default!;
 
-    [ForeignKey(nameof(Contract))]
-    public int ContractId { get; set; }
-
-    [Required]
-    public Contract Contract { get; set; } = default!;
-
     [Required]
     public DateTime CreationDate { get; set; }
+
+    [NotMapped]
+    public DateTime? SignedDate => Signature?.CreationDate;
 
     [Required]
     [Precision(18, 2)]
@@ -34,6 +31,5 @@ public class Payment : Entity
     [MaxLength(500)]
     public string? Description { get; set; }
 
-    [Required]
-    public bool Paid { get; set; } = false;
+    public Signature? Signature { get; set; }
 }
