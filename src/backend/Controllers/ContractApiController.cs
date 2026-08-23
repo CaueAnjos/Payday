@@ -33,20 +33,14 @@ public class ContractApiController(
                 return Ok((DefaultContractResponse)payer);
         }
 
-        Page<Contract> page;
+        Page page;
+        var mapperFunc = (Contract c) => (DefaultContractResponse)c;
         if (cursor is null)
-            page = await _paginator.MakePageAsync(new Cursor(0), size, cancel);
+            page = await _paginator.MakePageAsync(new Cursor(0), size, mapperFunc, cancel);
         else
-            page = await _paginator.MakePageAsync(cursor, size, cancel);
+            page = await _paginator.MakePageAsync(cursor, size, mapperFunc, cancel);
 
-        var contractPage = new Page<DefaultContractResponse>(
-            page.Size,
-            page.Items.Select(c => (DefaultContractResponse)c).ToList(),
-            page.PreviousCursor,
-            page.NextCursor
-        );
-
-        return Ok(contractPage);
+        return Ok(page);
     }
 
     [HttpPost("{id}")]
