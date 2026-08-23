@@ -28,14 +28,15 @@ public class PayerApiController(IPayersRepository payers, IPaginatorService<Paye
             if (payer is null)
                 return NotFound();
             else
-                return Ok(payer);
+                return Ok((DefaultPayerResponse)payer);
         }
 
-        Page<Payer> page;
+        Page page;
+        var mapperFunc = (Payer p) => (DefaultPayerResponse)p;
         if (cursor is null)
-            page = await _paginator.MakePageAsync(new Cursor(0), size, cancel);
+            page = await _paginator.MakePageAsync(new Cursor(0), size, mapperFunc, cancel);
         else
-            page = await _paginator.MakePageAsync(cursor, size, cancel);
+            page = await _paginator.MakePageAsync(cursor, size, mapperFunc, cancel);
 
         return Ok(page);
     }
