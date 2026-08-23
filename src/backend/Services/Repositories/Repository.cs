@@ -12,7 +12,7 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
 
     protected virtual IQueryable<T> AddIncludes(IQueryable<T> query)
     {
-        return query;
+        return query.AsNoTracking();
     }
 
     public virtual async Task<bool> ExistsAsync(int id)
@@ -66,7 +66,6 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
                 .Where(e => e.Id < before)
                 .OrderByDescending(e => e.Id)
                 .Take(size)
-                .AsNoTracking()
                 .ToListAsync(cancel);
 
             precedingEntities.Reverse();
@@ -79,7 +78,6 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
             .Where(e => e.Id > cursor)
             .OrderBy(e => e.Id)
             .Take(size)
-            .AsNoTracking()
             .ToListAsync(cancel);
     }
 

@@ -10,7 +10,7 @@ public class ContractsRepository(ContractContext context, ILogger<ContractsRepos
 {
     protected override IQueryable<Contract> AddIncludes(IQueryable<Contract> query)
     {
-        return query.Include(c => c.Participants);
+        return base.AddIncludes(query).Include(c => c.Participants);
     }
 
     public override async Task CreateAsync(Contract contract, CancellationToken cancel = default)
