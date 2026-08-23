@@ -81,4 +81,4 @@ public record UpdateContractRequest(
     }
 }
 
-public record AddPayerToContractRequest([Required] IReadOnlyList<int> PayerIds);
+public record AddParticipantsRequest([Required] IReadOnlyList<int> PayerIds);

@@ -10,5 +10,7 @@ public interface IContractsRepository : IRepository<Contract>
         CancellationToken cancel = default
     );
 
+    public Task RemovePayerAsync(int id, int payerId, CancellationToken cancel = default);
+
     public Task AddCloseSignature(int id, int participantId, CancellationToken cancel = default);
 }

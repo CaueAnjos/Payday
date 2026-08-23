@@ -43,15 +43,26 @@ public class ContractApiController(
         return Ok(page);
     }
 
-    [HttpPost("{id}")]
+    [HttpPost("{id}/participants")]
     public async Task<IActionResult> AddPayerToContract(
         int id,
-        AddPayerToContractRequest request,
+        AddParticipantsRequest request,
         CancellationToken cancel = default
     )
     {
         await _contracts.AddPayersAsync(id, request.PayerIds);
         return Ok();
+    }
+
+    [HttpDelete("{id}/participants/{participantId}")]
+    public async Task<IActionResult> RemoveParticipant(
+        int id,
+        int participantId,
+        CancellationToken cancel = default
+    )
+    {
+        await _contracts.RemovePayerAsync(id, participantId);
+        return NoContent();
     }
 
     [HttpPost("{id}/signatures/participant/{participantId}")]

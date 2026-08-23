@@ -61,6 +61,18 @@ public class ContractsRepository(ContractContext context, ILogger<ContractsRepos
         await context.SaveChangesAsync();
     }
 
+    public async Task RemovePayerAsync(int id, int payerId, CancellationToken cancel = default)
+    {
+        var contract = await GetByIdAsync(id);
+
+        var participant = contract?.Participants.FirstOrDefault(p => p.Id == payerId);
+        if (participant is null)
+            throw new NullReferenceException("Participant not found");
+
+        contract?.Participants.Remove(participant);
+        await context.SaveChangesAsync();
+    }
+
     public async Task AddCloseSignature(
         int id,
         int participantId,
