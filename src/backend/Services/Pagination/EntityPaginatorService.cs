@@ -10,23 +10,19 @@ public class PaginatorServiceOptions
     public int DefaultPageSize { get; set; }
 }
 
-public class EntityPaginatorService<entityType, repositoryType>
-    : IEntityPaginatorService<repositoryType, entityType>
-    where entityType : Entity
-    where repositoryType : IRepositoryReader<entityType>
+public class EntityPaginatorService<T> : IEntityPaginatorService<T>
+    where T : Entity
 {
     private readonly PaginatorServiceOptions _options;
     private readonly ICursorService _cursorService;
-    private readonly repositoryType _repositoryReader;
-    private readonly ILogger<EntityPaginatorService<entityType, repositoryType>> _logger;
-
-    public repositoryType RepositoryReader => _repositoryReader;
+    private readonly IRepositoryReader<T> _repositoryReader;
+    private readonly ILogger<EntityPaginatorService<T>> _logger;
 
     public EntityPaginatorService(
         IOptions<PaginatorServiceOptions> options,
-        repositoryType repository,
+        IRepositoryReader<T> repository,
         ICursorService cursorService,
-        ILogger<EntityPaginatorService<entityType, repositoryType>> logger
+        ILogger<EntityPaginatorService<T>> logger
     )
     {
         _options = options.Value;
@@ -43,15 +39,18 @@ public class EntityPaginatorService<entityType, repositoryType>
         return size;
     }
 
-    protected Page<entityType> BuildPage(
-        IReadOnlyList<entityType>? items = null,
+    protected Page BuildPage(
+        IReadOnlyList<T>? items = null,
         int? afterId = null,
-        int? beforeId = null
+        int? beforeId = null,
+        Func<T, object>? mapperFunc = null
     )
     {
         string nextCursor = string.Empty;
         if (afterId.HasValue)
-            nextCursor = _cursorService.EncodeCursor(new Cursor(afterId.Value, CursorDirection.Forward));
+            nextCursor = _cursorService.EncodeCursor(
+                new Cursor(afterId.Value, CursorDirection.Forward)
+            );
 
         string previousCursor = string.Empty;
         if (beforeId.HasValue)
@@ -59,18 +58,14 @@ public class EntityPaginatorService<entityType, repositoryType>
                 new Cursor(beforeId.Value, CursorDirection.Backward)
             );
 
-        var pageContent = items ?? [];
-        return new Page<entityType>(
-            Size: pageContent.Count,
-            Items: pageContent,
-            nextCursor,
-            previousCursor
-        );
+        var pageContent = items?.Select(mapperFunc ?? (i => i)).ToList() ?? [];
+        return new Page(Size: pageContent.Count, Items: pageContent, nextCursor, previousCursor);
     }
 
-    public async Task<Page<entityType>> MakePageAsync(
+    public async Task<Page> MakePageAsync(
         string encodeCursor,
         int size = -1,
+        Func<T, object>? mapperFunc = null,
         CancellationToken cancel = default
     )
     {
@@ -81,26 +76,28 @@ public class EntityPaginatorService<entityType, repositoryType>
             return BuildPage();
         }
 
-        return await MakePageAsync(cursor, size, cancel);
+        return await MakePageAsync(cursor, size, mapperFunc, cancel);
     }
 
-    public async Task<Page<entityType>> MakePageAsync(
+    public async Task<Page> MakePageAsync(
         Cursor cursor,
         int size = -1,
+        Func<T, object>? mapperFunc = null,
         CancellationToken cancel = default
     )
     {
         size = GetRealSize(size);
 
         return cursor.Direction == CursorDirection.Backward
-            ? await MakePreviousPageAsync(cursor.Id, size, cancel)
-            : await MakeNextPageAsync(cursor.Id, size, cancel);
+            ? await MakePreviousPageAsync(cursor.Id, size, mapperFunc, cancel)
+            : await MakeNextPageAsync(cursor.Id, size, mapperFunc, cancel);
     }
 
-    private async Task<Page<entityType>> MakeNextPageAsync(
+    private async Task<Page> MakeNextPageAsync(
         int afterId,
         int size,
-        CancellationToken cancel
+        Func<T, object>? mapperFunc = null,
+        CancellationToken cancel = default
     )
     {
         var entities =
@@ -113,13 +110,14 @@ public class EntityPaginatorService<entityType, repositoryType>
         int? nextId = hasMore && content.Count > 0 ? content.Last().Id : null;
         int? previousId = afterId > 0 && content.Count > 0 ? content.First().Id : null;
 
-        return BuildPage(content, afterId: nextId, beforeId: previousId);
+        return BuildPage(content, afterId: nextId, beforeId: previousId, mapperFunc);
     }
 
-    private async Task<Page<entityType>> MakePreviousPageAsync(
+    private async Task<Page> MakePreviousPageAsync(
         int beforeId,
         int size,
-        CancellationToken cancel
+        Func<T, object>? mapperFunc = null,
+        CancellationToken cancel = default
     )
     {
         var entities =

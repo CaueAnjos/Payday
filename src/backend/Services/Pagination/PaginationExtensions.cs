@@ -1,6 +1,5 @@
 using PaydayBackend.Models;
 using PaydayBackend.Models.Abstractions;
-using PaydayBackend.Services.Repositories;
 
 namespace PaydayBackend.Services.Pagination;
 
@@ -11,9 +10,10 @@ public static class PaginationExtensions
     )
         where entityType : Entity
     {
+        services.AddTransient<IPaginatorService<entityType>, EntityPaginatorService<entityType>>();
         services.AddTransient<
-            IPaginatorService<entityType>,
-            EntityPaginatorService<entityType, IRepositoryReader<entityType>>
+            IEntityPaginatorService<entityType>,
+            EntityPaginatorService<entityType>
         >();
 
         return services;

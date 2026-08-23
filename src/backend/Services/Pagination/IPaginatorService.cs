@@ -1,5 +1,4 @@
 using PaydayBackend.Models.Abstractions;
-using PaydayBackend.Services.Repositories;
 
 namespace PaydayBackend.Services.Pagination;
 
@@ -10,17 +9,19 @@ public record Page(int Size, IReadOnlyList<object> Items, string NextCursor, str
 
 public interface IPaginatorService<T>
 {
-    public Task<Page<T>> MakePageAsync(Cursor cursor, int size, CancellationToken cancel = default);
-    public Task<Page<T>> MakePageAsync(
+    public Task<Page> MakePageAsync(
+        Cursor cursor,
+        int size,
+        Func<T, object>? mapperFunc = null,
+        CancellationToken cancel = default
+    );
+    public Task<Page> MakePageAsync(
         string encodedCursor,
         int size,
+        Func<T, object>? mapperFunc = null,
         CancellationToken cancel = default
     );
 }
 
-public interface IEntityPaginatorService<repositoryType, entityType> : IPaginatorService<entityType>
-    where repositoryType : IRepositoryReader<entityType>
-    where entityType : Entity
-{
-    public repositoryType RepositoryReader { get; }
-}
+public interface IEntityPaginatorService<T> : IPaginatorService<T>
+    where T : Entity;
