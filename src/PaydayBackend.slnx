@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="PaydayBackend.Test/PaydayBackend.Test.csproj" />
+  <Project Path="PaydayBackend/PaydayBackend.csproj" />
+</Solution>
