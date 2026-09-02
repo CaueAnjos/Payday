@@ -15,8 +15,11 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
         return query.AsNoTracking();
     }
 
-    public virtual async Task<bool> ExistsAsync(int id)
+    public virtual async Task<bool> ExistsAsync(int id, CancellationToken cancel = default)
     {
+        if (id < 0)
+            throw new ArgumentOutOfRangeException("Only positive `id` are allowed");
+
         return await _query.AnyAsync(e => e.Id == id);
     }
 
@@ -50,39 +53,54 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
         }
     }
 
-    public virtual async Task<IReadOnlyList<T>?> GetAllAsync(
+    // TODO: this shouldn't be just one method
+    public virtual async Task<IReadOnlyList<T>> GetAllAsync(
         int? afterId = null,
         int? beforeId = null,
-        int size = 100,
+        int? size = null,
         CancellationToken cancel = default
     )
     {
-        if (size <= 0)
-            return null;
+        if (size < 0)
+            throw new ArgumentOutOfRangeException("Only positive `size` are allowed");
 
-        if (beforeId is int before)
-        {
-            var precedingEntities = await _query
-                .Where(e => e.Id < before)
-                .OrderByDescending(e => e.Id)
-                .Take(size)
-                .ToListAsync(cancel);
+        if (afterId < 0)
+            throw new ArgumentOutOfRangeException("Only positive `afterId` are allowed");
 
-            precedingEntities.Reverse();
-            return precedingEntities;
-        }
+        if (beforeId < 0)
+            throw new ArgumentOutOfRangeException("Only positive `beforeId` are allowed");
 
-        var cursor = afterId ?? 0;
+        if (size == 0)
+            return [];
 
-        return await _query
-            .Where(e => e.Id > cursor)
-            .OrderBy(e => e.Id)
-            .Take(size)
-            .ToListAsync(cancel);
+        IQueryable<T> query = _query;
+
+        if (afterId is not null)
+            query = query.Where(e => e.Id > afterId.Value);
+
+        if (beforeId is not null)
+            query = query.Where(e => e.Id < beforeId.Value);
+
+        query = beforeId is not null
+            ? query.OrderByDescending(e => e.Id)
+            : query.OrderBy(e => e.Id);
+
+        if (size.HasValue)
+            query = query.Take(size.Value);
+
+        var queryResult = await query.ToListAsync(cancel);
+
+        if (beforeId.HasValue)
+            queryResult.Reverse();
+
+        return queryResult;
     }
 
     public virtual async Task<T?> GetByIdAsync(int id, CancellationToken cancel = default)
     {
+        if (id < 0)
+            throw new ArgumentOutOfRangeException("Only positive `id` are allowed");
+
         return await _query.FirstOrDefaultAsync(e => e.Id == id);
     }
 
