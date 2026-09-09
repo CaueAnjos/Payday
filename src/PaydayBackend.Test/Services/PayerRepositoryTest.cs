@@ -3,12 +3,9 @@ using PaydayBackend.Services.Repositories;
 
 namespace PaydayBackend.Test.Services;
 
-public class PayersRepositoryReaderTest : RepositoryReaderTest<PayersRepository, Payer>
+public static class PayersRepositoryTestUtility
 {
-    public PayersRepositoryReaderTest()
-        : base((ContractContext context) => new PayersRepository(context)) { }
-
-    protected override Payer CreateFakeEntity(int id)
+    public static Payer CreateFakeEntity(int id)
     {
         return new Payer
         {
@@ -16,5 +13,27 @@ public class PayersRepositoryReaderTest : RepositoryReaderTest<PayersRepository,
             Email = "test@test.com",
             Name = "test",
         };
+    }
+}
+
+public class PayersRepositoryReaderTest : RepositoryReaderTest<PayersRepository, Payer>
+{
+    public PayersRepositoryReaderTest()
+        : base((ContractContext context) => new PayersRepository(context)) { }
+
+    protected override Payer CreateFakeEntity(int id)
+    {
+        return PayersRepositoryTestUtility.CreateFakeEntity(id);
+    }
+}
+
+public class PayersRepositoryWriterTest : RepositoryWriterTest<PayersRepository, Payer>
+{
+    public PayersRepositoryWriterTest()
+        : base((ContractContext context) => new PayersRepository(context)) { }
+
+    protected override Payer CreateFakeEntity(int id)
+    {
+        return PayersRepositoryTestUtility.CreateFakeEntity(id);
     }
 }
