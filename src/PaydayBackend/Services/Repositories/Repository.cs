@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PaydayBackend.Exceptions;
 using PaydayBackend.Models.Abstractions;
 
 namespace PaydayBackend.Services.Repositories;
@@ -25,6 +26,11 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
 
     public virtual async Task CreateAsync(T entity, CancellationToken cancel = default)
     {
+        if (await ExistsAsync(entity.Id))
+        {
+            throw new DuplicateEntityException(entity);
+        }
+
         await _entities.AddAsync(entity, cancel);
         await context.SaveChangesAsync(cancel);
     }
@@ -50,6 +56,10 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
         {
             _entities.Remove(entity);
             await context.SaveChangesAsync(cancel);
+        }
+        else
+        {
+            throw new EntityNotFoundException(typeof(T), id);
         }
     }
 
@@ -111,6 +121,10 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
         {
             context.Entry(entityToUpdate).CurrentValues.SetValues(patch);
             await context.SaveChangesAsync(cancel);
+        }
+        else
+        {
+            throw new EntityNotFoundException(typeof(T), id);
         }
     }
 }
