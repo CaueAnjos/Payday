@@ -18,11 +18,7 @@ public class Contract : Entity
 
     public List<Payer> Participants { get; set; } = [];
 
-    [NotMapped]
-    public IEnumerable<Payment> Payments =>
-        Participants
-            .SelectMany(p => p.Payments)
-            .Where(p => p.Signature is null && p.CreationDate <= PaymentDate);
+    public List<Payment> Payments { get; set; } = [];
 
     [Required]
     public DateTime CreationDate { get; set; }
