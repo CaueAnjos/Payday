@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using PaydayBackend.Exceptions;
 using PaydayBackend.Models;
 using PaydayBackend.Services.Pagination;
 using PaydayBackend.Services.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 // Add services to the container.
@@ -44,21 +46,25 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
 
-    app.UseWhen(
-        httpContext =>
-        {
-            return httpContext.Request.Path.StartsWithSegments("/api")
-                || httpContext.Request.ContentType == "application/json";
-        },
-        api =>
-        {
-            api.UseExceptionHandler();
-        }
-    );
-
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
+// ApiExceptionHandler maps domain exceptions (EntityNotFoundException,
+// DuplicateEntityException, InvalidContractStateException, ValidationException, ...)
+// to proper status codes. Applied in every environment so API responses are
+// consistent regardless of Development/Staging/Production.
+app.UseWhen(
+    httpContext =>
+    {
+        return httpContext.Request.Path.StartsWithSegments("/api")
+            || httpContext.Request.ContentType == "application/json";
+    },
+    api =>
+    {
+        api.UseExceptionHandler();
+    }
+);
 
 app.UseHttpsRedirection();
 app.UseRouting();
