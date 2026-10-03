@@ -11,7 +11,12 @@ public class PayersRepository(ContractContext context)
     {
         return query
             .Include(p => p.Payments)
+            .ThenInclude(payment => payment.Signature)
             .Include(p => p.Contracts)
-                .ThenInclude(c => c.Participants);
+            .ThenInclude(c => c.Participants)
+            .Include(p => p.Contracts)
+            .ThenInclude(c => c.Payments)
+            .Include(p => p.Contracts)
+            .ThenInclude(c => c.CloseSignatures);
     }
 }
