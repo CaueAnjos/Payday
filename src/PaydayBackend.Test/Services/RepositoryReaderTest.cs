@@ -65,7 +65,7 @@ public abstract class RepositoryReaderTest<TRepo, TEntity> : IDisposable
         result
             .Should()
             .NotBeNull()
-            .And.Satisfy<Payer>(p =>
+            .And.Satisfy<TEntity>(p =>
                 p.Id.Should().Be(7, because: "that is the ID that we are looking for")
             );
     }
@@ -178,7 +178,8 @@ public abstract class RepositoryReaderTest<TRepo, TEntity> : IDisposable
         var result = await _repository.GetAllAsync(cancel: TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().NotBeNull().And.Contain(_dbset).And.HaveSameCount(_context.Payers);
+        result.Should().NotBeNull();
+        result.Select(e => e.Id).Should().BeEquivalentTo(_dbset.Select(e => e.Id));
     }
 
     [Theory]
@@ -200,7 +201,8 @@ public abstract class RepositoryReaderTest<TRepo, TEntity> : IDisposable
         );
 
         // Assert
-        result.Should().NotBeNull().And.BeSubsetOf(_dbset).And.HaveCountLessThanOrEqualTo(size);
+        result.Should().NotBeNull().And.HaveCountLessThanOrEqualTo(size);
+        result.Select(e => e.Id).Should().BeSubsetOf(_dbset.Select(e => e.Id));
     }
 
     [Fact]
@@ -276,12 +278,16 @@ public abstract class RepositoryReaderTest<TRepo, TEntity> : IDisposable
         );
 
         // Assert
+        result.Should().NotBeNull();
+        result.Select(e => e.Id).Should().BeSubsetOf(_dbset.Select(e => e.Id));
         result
+            .Select(e => e.Id)
             .Should()
-            .NotBeNull()
-            .And.BeSubsetOf(_dbset)
-            .And.ContainInOrder(
-                _dbset.Where(p => p.Id > afterId && p.Id < beforeId).OrderBy(p => p.Id)
+            .ContainInOrder(
+                _dbset
+                    .Where(p => p.Id > afterId && p.Id < beforeId)
+                    .OrderBy(p => p.Id)
+                    .Select(e => e.Id)
             );
     }
 
