@@ -24,6 +24,7 @@ public class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger) : IExcepti
                 StatusCodes.Status409Conflict,
                 "Invalid contract state"
             ),
+            ImmutableEntityException => (StatusCodes.Status409Conflict, "Immutable entity"),
             ValidationException => (StatusCodes.Status400BadRequest, "Validation error"),
             ArgumentOutOfRangeException => (StatusCodes.Status400BadRequest, "Invalid argument"),
             _ => (0, string.Empty),
