@@ -50,7 +50,7 @@ public class ContractApiController(
         CancellationToken cancel = default
     )
     {
-        await _contracts.AddPayersAsync(id, request.PayerIds);
+        await _contracts.AddPayersAsync(id, request.PayerIds, cancel);
         return Ok();
     }
 
@@ -61,7 +61,7 @@ public class ContractApiController(
         CancellationToken cancel = default
     )
     {
-        await _contracts.RemovePayerAsync(id, participantId);
+        await _contracts.RemovePayerAsync(id, participantId, cancel);
         return NoContent();
     }
 
@@ -72,7 +72,8 @@ public class ContractApiController(
         CancellationToken cancel = default
     )
     {
-        return Ok();
+        await _contracts.AddCloseSignature(id, participantId, cancel);
+        return NoContent();
     }
 
     [HttpPost]
