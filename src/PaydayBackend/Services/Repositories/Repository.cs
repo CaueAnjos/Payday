@@ -51,7 +51,15 @@ public abstract class RepositoryBase<T>(DbContext context) : IRepository<T>
 
     public virtual async Task DeleteAsync(int id, CancellationToken cancel = default)
     {
-        var entity = await GetByIdAsync(id, cancel);
+        if (id < 0)
+            throw new ArgumentOutOfRangeException("Only positive `id` are allowed");
+
+        // `FindAsync` checks the local change tracker by key before querying the
+        // database, so it returns the already-tracked instance (if any) instead of a
+        // fresh one. Going through `GetByIdAsync` (which is `AsNoTracking`) would
+        // return a brand new instance, and `Remove`-ing it would throw if another
+        // instance with the same key is already tracked by this context.
+        var entity = await _entities.FindAsync([id], cancel);
         if (entity is not null)
         {
             _entities.Remove(entity);
