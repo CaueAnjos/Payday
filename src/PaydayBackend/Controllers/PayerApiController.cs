@@ -8,10 +8,14 @@ namespace PaydayBackend.Controllers;
 
 [ApiController]
 [Route("/api/payers")]
-public class PayerApiController(IPayersRepository payers, IPaginatorService<Payer> paginator)
-    : Controller
+public class PayerApiController(
+    IPayersRepository payers,
+    IPaymentsRepository payments,
+    IPaginatorService<Payer> paginator
+) : Controller
 {
     private readonly IPayersRepository _payers = payers;
+    private readonly IPaymentsRepository _payments = payments;
     private readonly IPaginatorService<Payer> _paginator = paginator;
 
     [HttpGet("{id?}")]
@@ -74,6 +78,45 @@ public class PayerApiController(IPayersRepository payers, IPaginatorService<Paye
     public async Task<IActionResult> DeletePayer(int id, CancellationToken cancel = default)
     {
         await _payers.DeleteAsync(id, cancel);
+        return NoContent();
+    }
+
+    [HttpGet("{id}/payments")]
+    public async Task<IActionResult> GetPayerPayments(int id, CancellationToken cancel = default)
+    {
+        var payerPayments = await _payments.GetByPayerIdAsync(id, cancel);
+        return Ok(payerPayments.Select(p => (DefaultPaymentResponse)p).ToList());
+    }
+
+    [HttpPost("{id}/payments")]
+    public async Task<IActionResult> CreatePayerPayments(
+        int id,
+        List<CreatePaymentRequest> request,
+        CancellationToken cancel = default
+    )
+    {
+        var newPayments = request.Select(r => r.ToPayment(id)).ToList();
+        var created = await _payments.CreatePayerPaymentsAsync(id, newPayments, cancel);
+
+        return CreatedAtAction(
+            nameof(GetPayerPayments),
+            new { id },
+            created.Select(p => (DefaultPaymentResponse)p).ToList()
+        );
+    }
+
+    [HttpDelete("{id}/payments/{paymentId}")]
+    public async Task<IActionResult> DeletePayerPayment(
+        int id,
+        int paymentId,
+        CancellationToken cancel = default
+    )
+    {
+        var payment = await _payments.GetByIdAsync(paymentId, cancel);
+        if (payment is null || payment.OwnerId != id)
+            return NotFound();
+
+        await _payments.DeleteAsync(paymentId, cancel);
         return NoContent();
     }
 }
