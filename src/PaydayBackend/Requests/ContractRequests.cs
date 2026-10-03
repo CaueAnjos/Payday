@@ -15,6 +15,14 @@ public record ParticipantResponse(
     }
 };
 
+public record SignatureResponse(int OwnerId, [Required] DateTime CreationDate)
+{
+    public static explicit operator SignatureResponse(Signature signature)
+    {
+        return new SignatureResponse(signature.OwnerId, signature.CreationDate);
+    }
+};
+
 public record DefaultContractResponse(
     int Id,
     [Required, MaxLength(200)] string Label,
@@ -23,9 +31,9 @@ public record DefaultContractResponse(
     [Required] DateTime CreationDate,
     [Required] DateTime PaymentDate,
     IReadOnlyList<ParticipantResponse> Participants,
-    IReadOnlyList<Payment> Payments,
+    IReadOnlyList<DefaultPaymentResponse> Payments,
     DateTime? CloseDate,
-    IReadOnlyList<Signature> CloseSignatures
+    IReadOnlyList<SignatureResponse> CloseSignatures
 )
 {
     public static explicit operator DefaultContractResponse(Contract contract)
@@ -38,9 +46,9 @@ public record DefaultContractResponse(
             contract.CreationDate,
             contract.PaymentDate,
             contract.Participants.Select(p => (ParticipantResponse)p).ToList(),
-            contract.Payments.ToList(),
+            contract.Payments.Select(p => (DefaultPaymentResponse)p).ToList(),
             contract.CloseDate,
-            contract.CloseSignatures
+            contract.CloseSignatures.Select(s => (SignatureResponse)s).ToList()
         );
     }
 };

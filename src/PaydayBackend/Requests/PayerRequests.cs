@@ -9,8 +9,9 @@ public record DefaultPaymentResponse(
     [Required] decimal Price, // FIX: should have data validation here!
     [Required, MaxLength(200)] string Label,
     [MaxLength(500)] string? Description,
+    int? ContractId,
     DateTime? SignedDate,
-    Signature? Signature
+    SignatureResponse? Signature
 )
 {
     public static explicit operator DefaultPaymentResponse(Payment payment)
@@ -21,8 +22,9 @@ public record DefaultPaymentResponse(
             payment.Price,
             payment.Label,
             payment.Description,
+            payment.ContractId,
             payment.SignedDate,
-            payment.Signature
+            payment.Signature is null ? null : (SignatureResponse)payment.Signature
         );
     }
 };
