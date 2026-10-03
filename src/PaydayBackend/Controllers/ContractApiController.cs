@@ -10,10 +10,12 @@ namespace PaydayBackend.Controllers;
 [Route("/api/contracts")]
 public class ContractApiController(
     IContractsRepository contracts,
+    IPaymentsRepository payments,
     IPaginatorService<Contract> paginator
 ) : Controller
 {
     private readonly IContractsRepository _contracts = contracts;
+    private readonly IPaymentsRepository _payments = payments;
     private readonly IPaginatorService<Contract> _paginator = paginator;
 
     [HttpGet("{id?}")]
@@ -92,6 +94,70 @@ public class ContractApiController(
     public async Task<IActionResult> DeleteContract(int id, CancellationToken cancel = default)
     {
         await _contracts.DeleteAsync(id, cancel);
+        return NoContent();
+    }
+
+    [HttpGet("{id}/payments")]
+    public async Task<IActionResult> GetContractPayments(
+        int id,
+        CancellationToken cancel = default
+    )
+    {
+        var contractPayments = await _payments.GetByContractIdAsync(id, cancel);
+        return Ok(contractPayments.Select(p => (DefaultPaymentResponse)p).ToList());
+    }
+
+    [HttpGet("{id}/payments/participant/{participantId}")]
+    public async Task<IActionResult> GetContractParticipantPayments(
+        int id,
+        int participantId,
+        CancellationToken cancel = default
+    )
+    {
+        var participantPayments = await _payments.GetByContractAndParticipantIdAsync(
+            id,
+            participantId,
+            cancel
+        );
+        return Ok(participantPayments.Select(p => (DefaultPaymentResponse)p).ToList());
+    }
+
+    [HttpPost("{id}/payments/participant/{participantId}")]
+    public async Task<IActionResult> CreateContractParticipantPayments(
+        int id,
+        int participantId,
+        List<CreatePaymentRequest> request,
+        CancellationToken cancel = default
+    )
+    {
+        var newPayments = request.Select(r => r.ToPayment(participantId, id)).ToList();
+        var created = await _payments.CreateContractParticipantPaymentsAsync(
+            id,
+            participantId,
+            newPayments,
+            cancel
+        );
+
+        return CreatedAtAction(
+            nameof(GetContractParticipantPayments),
+            new { id, participantId },
+            created.Select(p => (DefaultPaymentResponse)p).ToList()
+        );
+    }
+
+    [HttpDelete("{id}/payments/participant/{participantId}/{paymentId}")]
+    public async Task<IActionResult> DeleteContractParticipantPayment(
+        int id,
+        int participantId,
+        int paymentId,
+        CancellationToken cancel = default
+    )
+    {
+        var payment = await _payments.GetByIdAsync(paymentId, cancel);
+        if (payment is null || payment.ContractId != id || payment.OwnerId != participantId)
+            return NotFound();
+
+        await _payments.DeleteAsync(paymentId, cancel);
         return NoContent();
     }
 }
